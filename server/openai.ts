@@ -1,74 +1,86 @@
 import OpenAI from "openai";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function generateCurriculum(topic: string, goal: string) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: `You are an expert curriculum designer. Create a structured learning path and return it in JSON format with the following structure. Reply with JSON only, no other text:
+          content: `You are a JSON-based expert curriculum designer. Create a structured learning path and respond with a valid JSON object only. The response must follow this exact structure:
+
 {
   "sections": [
     {
-      "title": "section title",
-      "description": "section description",
-      "objectives": ["learning objective 1", "learning objective 2"],
-      "resources": ["recommended resource 1", "recommended resource 2"]
+      "title": "セクションのタイトル",
+      "description": "セクションの詳細な説明",
+      "objectives": ["学習目標1", "学習目標2"],
+      "resources": ["推奨教材1", "推奨教材2"]
     }
   ],
-  "estimatedDuration": "estimated time to complete the curriculum",
-  "prerequisites": ["prerequisite 1", "prerequisite 2"]
+  "estimatedDuration": "カリキュラム全体の推定所要時間",
+  "prerequisites": ["前提知識1", "前提知識2"]
 }`
         },
         {
           role: "user",
-          content: `Create a curriculum for learning ${topic}. The student's goal is: ${goal}`
+          content: `トピック「${topic}」のカリキュラムをJSON形式で作成してください。学習者の目標: ${goal || "基礎から応用まで体系的に学ぶ"}`
         }
       ],
       response_format: { type: "json_object" }
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    if (!response.choices[0].message.content) {
+      throw new Error("カリキュラムの生成に失敗しました");
+    }
+
+    const curriculum = JSON.parse(response.choices[0].message.content);
+    console.log("Generated curriculum:", curriculum);
+    return curriculum;
   } catch (error: any) {
     console.error("Curriculum generation error:", error);
-    throw new Error("Failed to generate curriculum: " + error.message);
+    throw new Error("カリキュラムの生成に失敗しました: " + error.message);
   }
 }
 
 export async function generateQuiz(topic: string, difficulty: string) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: `Create a multiple choice quiz with 5 questions and return it in JSON format with the following structure:
+          content: `You are a JSON-based quiz generator. Create 5 multiple choice questions and respond with a valid JSON object only. The response must follow this exact structure:
+
 {
   "questions": [
     {
-      "question": "question text",
-      "options": ["option 1", "option 2", "option 3", "option 4"],
+      "question": "問題文",
+      "options": ["選択肢1", "選択肢2", "選択肢3", "選択肢4"],
       "correctAnswer": 0,
-      "explanation": "explanation of the correct answer"
+      "explanation": "正解の説明"
     }
   ]
 }`
         },
         {
           role: "user",
-          content: `Generate a ${difficulty} difficulty quiz about ${topic}.`
+          content: `トピック「${topic}」の${difficulty}難易度のクイズをJSON形式で生成してください。`
         }
       ],
       response_format: { type: "json_object" }
     });
 
+    if (!response.choices[0].message.content) {
+      throw new Error("クイズの生成に失敗しました");
+    }
+
     return JSON.parse(response.choices[0].message.content);
-  } catch (error) {
-    throw new Error("Failed to generate quiz: " + error.message);
+  } catch (error: any) {
+    console.error("Quiz generation error:", error);
+    throw new Error("クイズの生成に失敗しました: " + error.message);
   }
 }
 
@@ -79,13 +91,16 @@ export async function getTutorResponse(
 ) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: `You are a helpful tutor teaching about ${context}. Provide clear, concise explanations.`
+          content: `あなたは${context}を教えるチューターです。明確で簡潔な説明を心がけ、学習者の理解を促進してください。`
         },
-        ...chatHistory,
+        ...chatHistory.map(msg => ({
+          role: msg.role as "assistant" | "user",
+          content: msg.content
+        })),
         {
           role: "user",
           content: message
@@ -93,37 +108,49 @@ export async function getTutorResponse(
       ]
     });
 
-    return response.choices[0].message.content;
-  } catch (error) {
-    throw new Error("Failed to get tutor response: " + error.message);
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error("チューターの応答の生成に失敗しました");
+    }
+
+    return content;
+  } catch (error: any) {
+    console.error("Tutor response error:", error);
+    throw new Error("チューターの応答の生成に失敗しました: " + error.message);
   }
 }
 
 export async function analyzeWeakness(quizResults: any[]) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: `Analyze quiz results to identify areas for improvement and return the analysis in JSON format with the following structure:
+          content: `You are a JSON-based learning analyzer. Analyze quiz results and respond with a valid JSON object only. The response must follow this exact structure:
+
 {
   "weakAreas": {
-    "areaName": "detailed explanation of why this area needs improvement",
+    "分野名": "この分野が改善が必要な理由の詳細な説明"
   },
-  "recommendations": ["specific recommendation 1", "specific recommendation 2"]
+  "recommendations": ["具体的な改善提案1", "具体的な改善提案2"]
 }`
         },
         {
           role: "user",
-          content: `Analyze these quiz results and provide improvement suggestions: ${JSON.stringify(quizResults)}`
+          content: `以下のクイズ結果を分析し、JSONフォーマットで改善提案を提供してください: ${JSON.stringify(quizResults)}`
         }
       ],
       response_format: { type: "json_object" }
     });
 
+    if (!response.choices[0].message.content) {
+      throw new Error("分析の生成に失敗しました");
+    }
+
     return JSON.parse(response.choices[0].message.content);
-  } catch (error) {
-    throw new Error("Failed to analyze weakness: " + error.message);
+  } catch (error: any) {
+    console.error("Weakness analysis error:", error);
+    throw new Error("弱点分析の生成に失敗しました: " + error.message);
   }
 }
