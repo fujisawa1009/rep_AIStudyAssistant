@@ -13,6 +13,7 @@ import { Loader2, BookOpen, MessageSquare, Brain, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { Topic } from '@db/schema';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -77,8 +78,6 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  const typedAnalysis = analysis as Analysis | undefined;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -154,81 +153,85 @@ export default function Dashboard() {
                 </DialogContent>
               </Dialog>
 
-              <div className="space-y-4">
-                {topics.length === 0 ? (
+              <div className="grid gap-4">
+                {(topics as Topic[]).length === 0 ? (
                   <p className="text-center text-gray-500 py-4">
                     まだトピックがありません。新しいトピックを作成してみましょう！
                   </p>
                 ) : (
-                  topics.map((topic) => (
-                    <Card key={topic.id} className="cursor-pointer hover:bg-gray-50">
-                      <CardContent className="p-4 flex justify-between items-center">
-                        <div>
-                          <h3 className="font-medium">{topic.name}</h3>
-                          <p className="text-sm text-gray-500">{topic.description}</p>
-                        </div>
-                        <div className="space-x-2 flex items-center">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setLocation(`/chat/${topic.id}`)}
-                          >
-                            <MessageSquare className="h-4 w-4 mr-1" />
-                            チャット
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setLocation(`/quiz/${topic.id}`)}
-                          >
-                            <Brain className="h-4 w-4 mr-1" />
-                            クイズ
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-500 hover:text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>トピックの削除</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  「{topic.name}」を削除してもよろしいですか？
-                                  この操作は取り消せません。関連するクイズ結果やチャット履歴も削除されます。
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                                <AlertDialogAction
-                                  className="bg-red-500 hover:bg-red-600"
-                                  onClick={async (e) => {
-                                    e.preventDefault();
-                                    try {
-                                      await deleteTopic(topic.id);
-                                      toast({
-                                        title: "成功",
-                                        description: `${topic.name}が削除されました`,
-                                      });
-                                    } catch (error) {
-                                      console.error('Failed to delete topic:', error);
-                                      toast({
-                                        title: "エラー",
-                                        description: "トピックの削除に失敗しました",
-                                        variant: "destructive",
-                                      });
-                                    }
-                                  }}
+                  (topics as Topic[]).map((topic) => (
+                    <Card key={topic.id} className="hover:bg-gray-50">
+                      <CardContent className="p-4">
+                        <div className="space-y-2">
+                          <div>
+                            <h3 className="font-medium text-lg">{topic.name}</h3>
+                            <p className="text-sm text-gray-500 line-clamp-2">{topic.description}</p>
+                          </div>
+                          <div className="flex items-center gap-2 pt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setLocation(`/chat/${topic.id}`)}
+                              className="flex-1"
+                            >
+                              <MessageSquare className="h-4 w-4 mr-1" />
+                              チャット
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setLocation(`/quiz/${topic.id}`)}
+                              className="flex-1"
+                            >
+                              <Brain className="h-4 w-4 mr-1" />
+                              クイズ
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-500 hover:text-red-600"
                                 >
-                                  削除
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>トピックの削除</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    「{topic.name}」を削除してもよろしいですか？
+                                    この操作は取り消せません。関連するクイズ結果やチャット履歴も削除されます。
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-red-500 hover:bg-red-600"
+                                    onClick={async (e) => {
+                                      e.preventDefault();
+                                      try {
+                                        await deleteTopic(topic.id);
+                                        toast({
+                                          title: "成功",
+                                          description: `${topic.name}が削除されました`,
+                                        });
+                                      } catch (error) {
+                                        console.error('Failed to delete topic:', error);
+                                        toast({
+                                          title: "エラー",
+                                          description: "トピックの削除に失敗しました",
+                                          variant: "destructive",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    削除
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -245,11 +248,11 @@ export default function Dashboard() {
               <CardTitle>学習の進捗</CardTitle>
             </CardHeader>
             <CardContent>
-              {typedAnalysis ? (
+              {analysis ? (
                 <div className="prose">
                   <h4>改善が必要な分野：</h4>
                   <ul>
-                    {Object.entries(typedAnalysis.weakAreas).map(([area, details]) => (
+                    {Object.entries((analysis as Analysis).weakAreas).map(([area, details]) => (
                       <li key={area}>
                         <strong>{area}:</strong> {details}
                       </li>
@@ -257,7 +260,7 @@ export default function Dashboard() {
                   </ul>
                   <h4>推奨事項：</h4>
                   <ul>
-                    {typedAnalysis.recommendations.map((recommendation, index) => (
+                    {(analysis as Analysis).recommendations.map((recommendation, index) => (
                       <li key={index}>{recommendation}</li>
                     ))}
                   </ul>

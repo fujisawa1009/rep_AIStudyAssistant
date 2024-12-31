@@ -2,6 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import type { Topic, Quiz, ChatHistory } from '@db/schema';
 
+type Analysis = {
+  weakAreas: Record<string, string>;
+  recommendations: string[];
+};
+
 export function useTutor() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -31,7 +36,7 @@ export function useTutor() {
         throw new Error(errorText);
       }
 
-      return response.json();
+      return response.json() as Promise<Topic>;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
@@ -150,7 +155,7 @@ export function useTutor() {
     }
   });
 
-  const { data: analysis, isLoading: analysisLoading } = useQuery({
+  const { data: analysis, isLoading: analysisLoading } = useQuery<Analysis>({
     queryKey: ['/api/analysis'],
     onError: (error: Error) => {
       toast({
