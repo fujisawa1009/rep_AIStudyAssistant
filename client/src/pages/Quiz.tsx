@@ -8,27 +8,38 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Loader2 } from 'lucide-react';
 
+// クイズの問題の型定義
 type Question = {
-  question: string;
-  options: string[];
-  correctAnswer: number;
+  question: string;     // 問題文
+  options: string[];    // 選択肢のリスト
+  correctAnswer: number; // 正解のインデックス
 };
 
 export default function Quiz() {
+  // URLからトピックIDを取得
   const [, params] = useRoute('/quiz/:id');
+  // チューター関連の機能を取得
   const { topics, createQuiz, submitQuiz } = useTutor();
+  // クイズの状態管理
   const [quiz, setQuiz] = useState<{ id: number; questions: Question[] } | null>(null);
+  // 現在の問題番号
   const [currentQuestion, setCurrentQuestion] = useState(0);
+  // ユーザーの回答履歴
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
+  // ローディング状態
   const [isLoading, setIsLoading] = useState(false);
+  // 結果表示状態
   const [showResults, setShowResults] = useState(false);
 
+  // トピックIDに基づいてトピックを取得
   const topic = topics?.find(t => t.id === Number(params?.id));
 
+  // クイズの開始処理
   const startQuiz = async () => {
     if (!topic) return;
     setIsLoading(true);
     try {
+      // 新しいクイズを作成
       const newQuiz = await createQuiz(topic.id);
       setQuiz(newQuiz);
       setSelectedAnswers([]);
@@ -41,6 +52,7 @@ export default function Quiz() {
     }
   };
 
+  // 回答選択時の処理
   const handleAnswer = (answer: number) => {
     setSelectedAnswers(prev => {
       const newAnswers = [...prev];
@@ -49,6 +61,7 @@ export default function Quiz() {
     });
   };
 
+  // 次の問題へ進む処理
   const nextQuestion = () => {
     if (currentQuestion < (quiz?.questions.length || 0) - 1) {
       setCurrentQuestion(prev => prev + 1);
@@ -57,13 +70,16 @@ export default function Quiz() {
     }
   };
 
+  // クイズ終了時の処理
   const finishQuiz = async () => {
     if (!quiz) return;
 
+    // スコアの計算
     const score = selectedAnswers.reduce((acc, answer, index) => {
       return acc + (answer === quiz.questions[index].correctAnswer ? 1 : 0);
     }, 0);
 
+    // 結果を送信
     await submitQuiz({
       quizId: quiz.id,
       score,
@@ -73,10 +89,12 @@ export default function Quiz() {
     setShowResults(true);
   };
 
+  // トピックが見つからない場合のエラー表示
   if (!topic) {
     return <div>Topic not found</div>;
   }
 
+  // ローディング中の表示
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -85,6 +103,7 @@ export default function Quiz() {
     );
   }
 
+  // クイズ開始前の表示
   if (!quiz) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -101,6 +120,7 @@ export default function Quiz() {
     );
   }
 
+  // クイズ結果の表示
   if (showResults) {
     const score = selectedAnswers.reduce((acc, answer, index) => {
       return acc + (answer === quiz.questions[index].correctAnswer ? 1 : 0);
@@ -126,6 +146,7 @@ export default function Quiz() {
     );
   }
 
+  // クイズ問題の表示
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <Card>

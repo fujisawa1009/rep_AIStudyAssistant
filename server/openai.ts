@@ -1,9 +1,12 @@
 import OpenAI from "openai";
 
+// OpenAI APIクライアントの初期化
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// カリキュラムを生成する関数
 export async function generateCurriculum(topic: string, goal: string) {
   try {
+    // GPT-4を使用してカリキュラムを生成
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -43,6 +46,7 @@ export async function generateCurriculum(topic: string, goal: string) {
     }
 
     try {
+      // レスポンスをJSONとしてパース
       const curriculum = JSON.parse(response.choices[0].message.content);
       console.log("Generated curriculum:", curriculum);
       return curriculum;
@@ -56,12 +60,14 @@ export async function generateCurriculum(topic: string, goal: string) {
   }
 }
 
+// チューターの応答を生成する関数
 export async function getTutorResponse(
   message: string,
   context: string,
   chatHistory: Array<{ role: string; content: string }>
 ) {
   try {
+    // GPT-4を使用してチューターの応答を生成
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -97,14 +103,17 @@ export async function getTutorResponse(
   }
 }
 
+// クイズの問題の型定義
 type Question = {
-  question: string;
-  options: string[];
-  correctAnswer: number;
+  question: string;      // 問題文
+  options: string[];     // 選択肢
+  correctAnswer: number; // 正解のインデックス
 };
 
+// クイズを生成する関数
 export async function generateQuiz(topic: string, difficulty: string): Promise<Question[]> {
   try {
+    // GPT-4を使用してクイズを生成
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -141,6 +150,7 @@ export async function generateQuiz(topic: string, difficulty: string): Promise<Q
     }
 
     try {
+      // レスポンスをJSONとしてパース
       const quiz = JSON.parse(response.choices[0].message.content);
       console.log("Generated quiz:", quiz);
 
@@ -167,8 +177,10 @@ export async function generateQuiz(topic: string, difficulty: string): Promise<Q
   }
 }
 
+// 学習の弱点を分析する関数
 export async function analyzeWeakness(quizResults: any[]) {
   try {
+    // GPT-4を使用して学習分析を生成
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -195,6 +207,7 @@ export async function analyzeWeakness(quizResults: any[]) {
     }
 
     try {
+      // レスポンスをJSONとしてパース
       const analysis = JSON.parse(response.choices[0].message.content);
       console.log("Generated analysis:", analysis);
       return analysis;
@@ -207,3 +220,10 @@ export async function analyzeWeakness(quizResults: any[]) {
     throw new Error("弱点分析の生成に失敗しました: " + error.message);
   }
 }
+
+// このファイルはOpenAI APIを使用して以下の機能を提供します。
+// 1. OpenAI APIとの通信
+// 2. カリキュラム生成
+// 3. チャット応答生成
+// 4. クイズ生成
+// 5. 学習分析
