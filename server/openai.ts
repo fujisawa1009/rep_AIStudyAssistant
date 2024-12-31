@@ -9,7 +9,7 @@ export async function generateCurriculum(topic: string, goal: string) {
       messages: [
         {
           role: "system",
-          content: `You are a JSON-based expert curriculum designer. Create a structured learning path and respond with a valid JSON object only. The response must follow this exact structure:
+          content: `あなたは専門的なカリキュラムデザイナーです。以下の形式の有効なJSONオブジェクトのみを返してください：
 
 {
   "sections": [
@@ -28,8 +28,7 @@ export async function generateCurriculum(topic: string, goal: string) {
           role: "user",
           content: `トピック「${topic}」のカリキュラムをJSON形式で作成してください。学習者の目標: ${goal || "基礎から応用まで体系的に学ぶ"}`
         }
-      ],
-      response_format: { type: "json_object" }
+      ]
     });
 
     if (!response.choices[0].message.content) {
@@ -52,7 +51,7 @@ export async function generateQuiz(topic: string, difficulty: string) {
       messages: [
         {
           role: "system",
-          content: `You are a JSON-based quiz generator. Create 5 multiple choice questions and respond with a valid JSON object only. The response must follow this exact structure:
+          content: `以下の形式の有効なJSONオブジェクトのみで5つの選択式問題を作成してください：
 
 {
   "questions": [
@@ -69,8 +68,7 @@ export async function generateQuiz(topic: string, difficulty: string) {
           role: "user",
           content: `トピック「${topic}」の${difficulty}難易度のクイズをJSON形式で生成してください。`
         }
-      ],
-      response_format: { type: "json_object" }
+      ]
     });
 
     if (!response.choices[0].message.content) {
@@ -127,7 +125,7 @@ export async function analyzeWeakness(quizResults: any[]) {
       messages: [
         {
           role: "system",
-          content: `You are a JSON-based learning analyzer. Analyze quiz results and respond with a valid JSON object only. The response must follow this exact structure:
+          content: `以下の形式の有効なJSONオブジェクトのみで分析結果を返してください：
 
 {
   "weakAreas": {
@@ -140,8 +138,7 @@ export async function analyzeWeakness(quizResults: any[]) {
           role: "user",
           content: `以下のクイズ結果を分析し、JSONフォーマットで改善提案を提供してください: ${JSON.stringify(quizResults)}`
         }
-      ],
-      response_format: { type: "json_object" }
+      ]
     });
 
     if (!response.choices[0].message.content) {
