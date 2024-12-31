@@ -35,8 +35,7 @@ export async function generateCurriculum(topic: string, goal: string) {
           role: "user",
           content: `トピック「${topic}」のカリキュラムを作成してください。学習目標: ${goal || "基礎から応用まで体系的に学ぶ"}`
         }
-      ],
-      response_format: { type: "json_object" }
+      ]
     });
 
     if (!response.choices[0].message.content) {
@@ -98,32 +97,43 @@ export async function getTutorResponse(
   }
 }
 
-export async function generateQuiz(topic: string, difficulty: string) {
+type Question = {
+  question: string;
+  options: string[];
+  correctAnswer: number;
+};
+
+export async function generateQuiz(topic: string, difficulty: string): Promise<Question[]> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: `以下の形式の有効なJSONオブジェクトのみを返してください：
+          content: `以下の形式で5つの選択式問題を作成してください。回答は0から始まるインデックスで指定します：
 
 {
   "questions": [
     {
-      "question": "問題文",
+      "question": "問題文をここに記述",
       "options": ["選択肢1", "選択肢2", "選択肢3", "選択肢4"],
-      "correctAnswer": 0,
-      "explanation": "正解の説明"
+      "correctAnswer": 0
     }
   ]
-}`
+}
+
+クイズ作成時の注意点：
+1. 問題文は明確で理解しやすい表現を使用する
+2. 選択肢は明確な違いがあり、紛らわしくないものにする
+3. 正解は必ず選択肢の中に含める
+4. 難易度に応じた適切な問題を作成する
+5. 必ず5問作成する`
         },
         {
           role: "user",
-          content: `トピック「${topic}」の${difficulty}難易度のクイズを5問、JSON形式で生成してください。`
+          content: `トピック「${topic}」の${difficulty}難易度のクイズを5問作成してください。`
         }
-      ],
-      response_format: { type: "json_object" }
+      ]
     });
 
     if (!response.choices[0].message.content) {
@@ -133,7 +143,20 @@ export async function generateQuiz(topic: string, difficulty: string) {
     try {
       const quiz = JSON.parse(response.choices[0].message.content);
       console.log("Generated quiz:", quiz);
-      return quiz.questions; // questions配列のみを返す
+
+      // バリデーション：questions配列が存在し、5つの問題があることを確認
+      if (!quiz.questions || !Array.isArray(quiz.questions) || quiz.questions.length !== 5) {
+        throw new Error("クイズの形式が不正です");
+      }
+
+      // 各問題の形式を確認
+      quiz.questions.forEach((q: Question, index: number) => {
+        if (!q.question || !Array.isArray(q.options) || q.options.length !== 4 || typeof q.correctAnswer !== 'number' || q.correctAnswer < 0 || q.correctAnswer > 3) {
+          throw new Error(`問題${index + 1}の形式が不正です`);
+        }
+      });
+
+      return quiz.questions;
     } catch (parseError) {
       console.error("Failed to parse quiz:", parseError);
       throw new Error("クイズのJSONパースに失敗しました");
@@ -151,7 +174,7 @@ export async function analyzeWeakness(quizResults: any[]) {
       messages: [
         {
           role: "system",
-          content: `以下の形式の有効なJSONオブジェクトのみで分析結果を返してください：
+          content: `あなたは学習分析の専門家です。以下の形式の有効なJSONオブジェクトのみで分析結果を返してください：
 
 {
   "weakAreas": {
@@ -162,10 +185,9 @@ export async function analyzeWeakness(quizResults: any[]) {
         },
         {
           role: "user",
-          content: `以下のクイズ結果を分析し、JSONフォーマットで改善提案を提供してください: ${JSON.stringify(quizResults)}`
+          content: `以下のクイズ結果を分析し、改善提案を提供してください: ${JSON.stringify(quizResults)}`
         }
-      ],
-      response_format: { type: "json_object" }
+      ]
     });
 
     if (!response.choices[0].message.content) {
@@ -173,7 +195,9 @@ export async function analyzeWeakness(quizResults: any[]) {
     }
 
     try {
-      return JSON.parse(response.choices[0].message.content);
+      const analysis = JSON.parse(response.choices[0].message.content);
+      console.log("Generated analysis:", analysis);
+      return analysis;
     } catch (parseError) {
       console.error("Failed to parse analysis:", parseError);
       throw new Error("分析結果のJSONパースに失敗しました");
