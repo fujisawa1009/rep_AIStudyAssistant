@@ -7,10 +7,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Send } from 'lucide-react';
 
+type ChatMessage = {
+  content: string;
+  isAi: boolean;
+};
+
 export default function ChatInterface() {
   const [, params] = useRoute('/chat/:id');
   const { topics, sendMessage } = useTutor();
-  const [messages, setMessages] = useState<Array<{ content: string; isAi: boolean }>>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -24,27 +29,34 @@ export default function ChatInterface() {
   }, [messages]);
 
   const handleSubmit = async () => {
-    if (!input.trim() || !topic) return;
+    if (!input.trim() || !topic?.id) return;
 
     setIsLoading(true);
     setMessages(prev => [...prev, { content: input, isAi: false }]);
+    const currentInput = input;
     setInput('');
 
     try {
       const response = await sendMessage({
         topicId: topic.id,
-        message: input,
+        message: currentInput,
       });
-      setMessages(prev => [...prev, { content: response.message, isAi: true }]);
+
+      if (response) {
+        setMessages(prev => [...prev, { content: response.message, isAi: true }]);
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
+      // Revert the user message if the API call fails
+      setMessages(prev => prev.slice(0, -1));
+      setInput(currentInput);
     } finally {
       setIsLoading(false);
     }
   };
 
   if (!topic) {
-    return <div>Topic not found</div>;
+    return <div>トピックが見つかりません</div>;
   }
 
   return (
@@ -81,7 +93,7 @@ export default function ChatInterface() {
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask your tutor a question..."
+              placeholder="チューターに質問してみましょう..."
               className="resize-none"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -89,6 +101,7 @@ export default function ChatInterface() {
                   handleSubmit();
                 }
               }}
+              disabled={isLoading}
             />
             <Button
               onClick={handleSubmit}

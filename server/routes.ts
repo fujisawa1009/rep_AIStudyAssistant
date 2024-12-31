@@ -30,7 +30,7 @@ export function registerRoutes(app: Express): Server {
     try {
       const result = insertTopicSchema.safeParse(req.body);
       if (!result.success) {
-        return res.status(400).send("Invalid input");
+        return res.status(400).send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
       }
 
       const curriculum = await generateCurriculum(
@@ -74,16 +74,20 @@ export function registerRoutes(app: Express): Server {
     try {
       const result = insertQuizSchema.safeParse(req.body);
       if (!result.success) {
-        return res.status(400).send("Invalid input");
+        return res.status(400).send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
       }
 
-      const topic = await db
+      const [topic] = await db
         .select()
         .from(topics)
         .where(eq(topics.id, result.data.topicId))
         .limit(1);
 
-      const quizQuestions = await generateQuiz(topic[0].name, "medium");
+      if (!topic) {
+        return res.status(404).send("Topic not found");
+      }
+
+      const quizQuestions = await generateQuiz(topic.name, "medium");
 
       const [quiz] = await db
         .insert(quizzes)
@@ -100,6 +104,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Quiz Results (Unchanged from original)
   app.post("/api/quiz-results", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).send("Not authorized");
 
@@ -123,6 +128,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Analysis (Unchanged from original)
   app.get("/api/analysis", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).send("Not authorized");
 
@@ -144,16 +150,20 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated()) return res.status(401).send("Not authorized");
 
     try {
-      const result = insertChatHistorySchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).send("Invalid input");
+      // Check if required fields exist
+      if (!req.body.message || !req.body.topicId) {
+        return res.status(400).send("Invalid input: message and topicId are required");
       }
 
-      const topic = await db
+      const [topic] = await db
         .select()
         .from(topics)
-        .where(eq(topics.id, result.data.topicId))
+        .where(eq(topics.id, req.body.topicId))
         .limit(1);
+
+      if (!topic) {
+        return res.status(404).send("Topic not found");
+      }
 
       const previousMessages = await db
         .select()
@@ -161,7 +171,7 @@ export function registerRoutes(app: Express): Server {
         .where(
           and(
             eq(chatHistory.userId, req.user.id),
-            eq(chatHistory.topicId, result.data.topicId)
+            eq(chatHistory.topicId, req.body.topicId)
           )
         )
         .orderBy(chatHistory.createdAt);
@@ -171,24 +181,30 @@ export function registerRoutes(app: Express): Server {
         content: msg.message,
       }));
 
+      // Store user's message first
+      const [userMessage] = await db
+        .insert(chatHistory)
+        .values({
+          userId: req.user.id,
+          topicId: req.body.topicId,
+          message: req.body.message,
+          isAi: false,
+        })
+        .returning();
+
+      // Get AI response
       const aiResponse = await getTutorResponse(
-        result.data.message,
-        topic[0].name,
+        req.body.message,
+        topic.name,
         chatContext
       );
 
-      await db.insert(chatHistory).values({
-        userId: req.user.id,
-        topicId: result.data.topicId,
-        message: result.data.message,
-        isAi: false,
-      });
-
+      // Store AI's response
       const [aiMessage] = await db
         .insert(chatHistory)
         .values({
           userId: req.user.id,
-          topicId: result.data.topicId,
+          topicId: req.body.topicId,
           message: aiResponse,
           isAi: true,
         })
@@ -196,6 +212,7 @@ export function registerRoutes(app: Express): Server {
 
       res.json(aiMessage);
     } catch (error) {
+      console.error("Chat error:", error);
       res.status(500).send(error.message);
     }
   });
