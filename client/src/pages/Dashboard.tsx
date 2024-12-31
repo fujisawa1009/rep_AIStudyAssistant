@@ -104,7 +104,7 @@ export default function Dashboard() {
                           <FormItem>
                             <FormLabel>トピック名</FormLabel>
                             <FormControl>
-                              <Input {...field} autoFocus />
+                              <Input {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
