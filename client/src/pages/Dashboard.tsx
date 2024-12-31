@@ -202,6 +202,7 @@ export default function Dashboard() {
                     <Card key={topic.id} className="hover:bg-gray-50">
                       <CardContent className="p-4">
                         <div className="space-y-2">
+                          {/* トピック情報の表示 */}
                           <div>
                             <h3 className="font-medium text-lg">{topic.name}</h3>
                             <p className="text-sm text-gray-500 line-clamp-2">{topic.description}</p>
