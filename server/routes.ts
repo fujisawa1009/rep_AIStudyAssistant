@@ -33,11 +33,18 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
       }
 
-      const curriculum = await generateCurriculum(
-        result.data.name,
-        result.data.description || ""
-      );
+      let curriculum;
+      try {
+        curriculum = await generateCurriculum(
+          result.data.name,
+          result.data.description || ""
+        );
+      } catch (error: any) {
+        console.error("Error generating curriculum:", error);
+        return res.status(500).send("カリキュラムの生成に失敗しました: " + error.message);
+      }
 
+      // トピックの作成（1回のみ実行）
       const [topic] = await db
         .insert(topics)
         .values({
