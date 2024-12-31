@@ -9,9 +9,10 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 
+// 認証フォームのバリデーションスキーマ
 const authSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  username: z.string().min(3, 'ユーザー名は3文字以上である必要があります'),
+  password: z.string().min(6, 'パスワードは6文字以上である必要があります'),
 });
 
 type AuthForm = z.infer<typeof authSchema>;
@@ -46,7 +47,7 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md mx-4">
         <CardHeader>
-          <CardTitle>{isRegister ? 'Register' : 'Login'}</CardTitle>
+          <CardTitle>{isRegister ? '新規登録' : 'ログイン'}</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -56,7 +57,7 @@ export default function AuthPage() {
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Username</FormLabel>
+                    <FormLabel>ユーザー名</FormLabel>
                     <FormControl>
                       <Input {...field} disabled={isLoading} />
                     </FormControl>
@@ -69,7 +70,7 @@ export default function AuthPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>パスワード</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} disabled={isLoading} />
                     </FormControl>
@@ -80,7 +81,7 @@ export default function AuthPage() {
               <div className="space-y-2">
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isRegister ? 'Register' : 'Login'}
+                  {isRegister ? '登録' : 'ログイン'}
                 </Button>
                 <Button
                   type="button"
@@ -89,7 +90,7 @@ export default function AuthPage() {
                   onClick={() => setIsRegister(!isRegister)}
                   disabled={isLoading}
                 >
-                  {isRegister ? 'Already have an account? Login' : "Don't have an account? Register"}
+                  {isRegister ? 'アカウントをお持ちの方はこちら' : 'アカウントをお持ちでない方はこちら'}
                 </Button>
               </div>
             </form>
