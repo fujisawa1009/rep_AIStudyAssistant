@@ -10,7 +10,19 @@ export async function generateCurriculum(topic: string, goal: string) {
       messages: [
         {
           role: "system",
-          content: "You are an expert curriculum designer. Create a structured learning path."
+          content: `You are an expert curriculum designer. Create a structured learning path and return it in JSON format with the following structure:
+{
+  "sections": [
+    {
+      "title": "section title",
+      "description": "section description",
+      "objectives": ["learning objective 1", "learning objective 2"],
+      "resources": ["recommended resource 1", "recommended resource 2"]
+    }
+  ],
+  "estimatedDuration": "estimated time to complete the curriculum",
+  "prerequisites": ["prerequisite 1", "prerequisite 2"]
+}`
         },
         {
           role: "user",
@@ -33,7 +45,17 @@ export async function generateQuiz(topic: string, difficulty: string) {
       messages: [
         {
           role: "system",
-          content: "Create a multiple choice quiz with 5 questions."
+          content: `Create a multiple choice quiz with 5 questions and return it in JSON format with the following structure:
+{
+  "questions": [
+    {
+      "question": "question text",
+      "options": ["option 1", "option 2", "option 3", "option 4"],
+      "correctAnswer": 0,
+      "explanation": "explanation of the correct answer"
+    }
+  ]
+}`
         },
         {
           role: "user",
@@ -83,13 +105,17 @@ export async function analyzeWeakness(quizResults: any[]) {
       messages: [
         {
           role: "system",
-          content: "Analyze quiz results to identify areas for improvement."
+          content: `Analyze quiz results to identify areas for improvement and return the analysis in JSON format with the following structure:
+{
+  "weakAreas": {
+    "areaName": "detailed explanation of why this area needs improvement",
+  },
+  "recommendations": ["specific recommendation 1", "specific recommendation 2"]
+}`
         },
         {
           role: "user",
-          content: `Analyze these quiz results and provide improvement suggestions: ${JSON.stringify(
-            quizResults
-          )}`
+          content: `Analyze these quiz results and provide improvement suggestions: ${JSON.stringify(quizResults)}`
         }
       ],
       response_format: { type: "json_object" }
