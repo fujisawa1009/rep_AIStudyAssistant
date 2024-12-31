@@ -7,22 +7,30 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { Loader2, BookOpen, MessageSquare, Brain } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
-type TopicForm = {
-  name: string;
-  description: string;
-};
+const topicSchema = z.object({
+  name: z.string().min(1, "トピック名は必須です"),
+  description: z.string().min(1, "説明は必須です"),
+});
+
+type TopicForm = z.infer<typeof topicSchema>;
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { user, logout } = useUser();
   const { topics, topicsLoading, createTopic, analysis, analysisLoading } = useTutor();
   const [isCreating, setIsCreating] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<TopicForm>({
+    resolver: zodResolver(topicSchema),
     defaultValues: {
       name: '',
       description: '',
@@ -33,7 +41,18 @@ export default function Dashboard() {
     setIsCreating(true);
     try {
       await createTopic(data);
+      setIsDialogOpen(false);
       form.reset();
+      toast({
+        title: "成功",
+        description: "トピックが作成されました",
+      });
+    } catch (error: any) {
+      toast({
+        title: "エラー",
+        description: error.message || "トピックの作成に失敗しました",
+        variant: "destructive",
+      });
     } finally {
       setIsCreating(false);
     }
@@ -50,8 +69,8 @@ export default function Dashboard() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Welcome, {user?.username}!</h1>
-        <Button variant="ghost" onClick={() => logout()}>Logout</Button>
+        <h1 className="text-3xl font-bold">ようこそ、{user?.username}さん！</h1>
+        <Button variant="ghost" onClick={() => logout()}>ログアウト</Button>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -60,17 +79,17 @@ export default function Dashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5" />
-                Your Learning Topics
+                学習トピック
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Dialog>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="w-full mb-4">Add New Topic</Button>
+                  <Button className="w-full mb-4">新しいトピックを追加</Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Create New Topic</DialogTitle>
+                    <DialogTitle>新しいトピックの作成</DialogTitle>
                   </DialogHeader>
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -79,10 +98,11 @@ export default function Dashboard() {
                         name="name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Topic Name</FormLabel>
+                            <FormLabel>トピック名</FormLabel>
                             <FormControl>
                               <Input {...field} disabled={isCreating} />
                             </FormControl>
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
@@ -91,16 +111,17 @@ export default function Dashboard() {
                         name="description"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Description</FormLabel>
+                            <FormLabel>説明</FormLabel>
                             <FormControl>
                               <Textarea {...field} disabled={isCreating} />
                             </FormControl>
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
                       <Button type="submit" disabled={isCreating}>
                         {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Create Topic
+                        トピックを作成
                       </Button>
                     </form>
                   </Form>
@@ -108,34 +129,40 @@ export default function Dashboard() {
               </Dialog>
 
               <div className="space-y-4">
-                {topics?.map((topic) => (
-                  <Card key={topic.id} className="cursor-pointer hover:bg-gray-50">
-                    <CardContent className="p-4 flex justify-between items-center">
-                      <div>
-                        <h3 className="font-medium">{topic.name}</h3>
-                        <p className="text-sm text-gray-500">{topic.description}</p>
-                      </div>
-                      <div className="space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setLocation(`/chat/${topic.id}`)}
-                        >
-                          <MessageSquare className="h-4 w-4 mr-1" />
-                          Chat
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setLocation(`/quiz/${topic.id}`)}
-                        >
-                          <Brain className="h-4 w-4 mr-1" />
-                          Quiz
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                {topics?.length === 0 ? (
+                  <p className="text-center text-gray-500 py-4">
+                    まだトピックがありません。新しいトピックを作成してみましょう！
+                  </p>
+                ) : (
+                  topics?.map((topic) => (
+                    <Card key={topic.id} className="cursor-pointer hover:bg-gray-50">
+                      <CardContent className="p-4 flex justify-between items-center">
+                        <div>
+                          <h3 className="font-medium">{topic.name}</h3>
+                          <p className="text-sm text-gray-500">{topic.description}</p>
+                        </div>
+                        <div className="space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setLocation(`/chat/${topic.id}`)}
+                          >
+                            <MessageSquare className="h-4 w-4 mr-1" />
+                            チャット
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setLocation(`/quiz/${topic.id}`)}
+                          >
+                            <Brain className="h-4 w-4 mr-1" />
+                            クイズ
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -144,20 +171,24 @@ export default function Dashboard() {
         <section>
           <Card>
             <CardHeader>
-              <CardTitle>Learning Progress</CardTitle>
+              <CardTitle>学習の進捗</CardTitle>
             </CardHeader>
             <CardContent>
-              {analysis && (
+              {analysis ? (
                 <div className="prose">
-                  <h4>Areas for Improvement:</h4>
+                  <h4>改善が必要な分野：</h4>
                   <ul>
-                    {Object.entries(analysis).map(([area, details]) => (
+                    {Object.entries(analysis as Record<string, string>).map(([area, details]) => (
                       <li key={area}>
                         <strong>{area}:</strong> {details}
                       </li>
                     ))}
                   </ul>
                 </div>
+              ) : (
+                <p className="text-center text-gray-500 py-4">
+                  クイズを受けて学習の進捗を確認しましょう！
+                </p>
               )}
             </CardContent>
           </Card>
