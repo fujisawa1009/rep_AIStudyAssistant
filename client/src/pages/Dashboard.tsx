@@ -21,10 +21,15 @@ const topicSchema = z.object({
 
 type TopicForm = z.infer<typeof topicSchema>;
 
+type Analysis = {
+  weakAreas: Record<string, string>;
+  recommendations: string[];
+};
+
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { user, logout } = useUser();
-  const { topics, topicsLoading, createTopic, analysis, analysisLoading } = useTutor();
+  const { topics = [], topicsLoading, createTopic, analysis, analysisLoading } = useTutor();
   const [isCreating, setIsCreating] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -65,6 +70,8 @@ export default function Dashboard() {
       </div>
     );
   }
+
+  const typedAnalysis = analysis as Analysis | undefined;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -129,12 +136,12 @@ export default function Dashboard() {
               </Dialog>
 
               <div className="space-y-4">
-                {topics?.length === 0 ? (
+                {topics.length === 0 ? (
                   <p className="text-center text-gray-500 py-4">
                     まだトピックがありません。新しいトピックを作成してみましょう！
                   </p>
                 ) : (
-                  topics?.map((topic) => (
+                  topics.map((topic) => (
                     <Card key={topic.id} className="cursor-pointer hover:bg-gray-50">
                       <CardContent className="p-4 flex justify-between items-center">
                         <div>
@@ -174,14 +181,20 @@ export default function Dashboard() {
               <CardTitle>学習の進捗</CardTitle>
             </CardHeader>
             <CardContent>
-              {analysis ? (
+              {typedAnalysis ? (
                 <div className="prose">
                   <h4>改善が必要な分野：</h4>
                   <ul>
-                    {Object.entries(analysis as Record<string, string>).map(([area, details]) => (
+                    {Object.entries(typedAnalysis.weakAreas).map(([area, details]) => (
                       <li key={area}>
                         <strong>{area}:</strong> {details}
                       </li>
+                    ))}
+                  </ul>
+                  <h4>推奨事項：</h4>
+                  <ul>
+                    {typedAnalysis.recommendations.map((recommendation, index) => (
+                      <li key={index}>{recommendation}</li>
                     ))}
                   </ul>
                 </div>
