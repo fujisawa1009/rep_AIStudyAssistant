@@ -15,18 +15,25 @@ export async function generateCurriculum(topic: string, goal: string) {
   "sections": [
     {
       "title": "セクションのタイトル",
-      "description": "セクションの詳細な説明",
-      "objectives": ["学習目標1", "学習目標2"],
-      "resources": ["推奨教材1", "推奨教材2"]
+      "description": "セクションの詳細な説明（学習内容と重要性を含む）",
+      "objectives": ["具体的な学習目標1", "具体的な学習目標2"],
+      "resources": ["推奨教材や参考資料1", "推奨教材や参考資料2"]
     }
   ],
-  "estimatedDuration": "カリキュラム全体の推定所要時間",
-  "prerequisites": ["前提知識1", "前提知識2"]
-}`
+  "estimatedDuration": "カリキュラム全体の推定所要時間（例：約20時間）",
+  "prerequisites": ["必要な前提知識や準備1", "必要な前提知識や準備2"]
+}
+
+以下の点に注意してカリキュラムを作成してください：
+1. セクションは論理的な順序で配置し、基礎から応用へと段階的に進むようにする
+2. 各セクションの説明は具体的で、なぜそれを学ぶ必要があるかを明確にする
+3. 学習目標は測定可能で具体的な形で記述する
+4. 推奨教材には実践的な演習や問題集も含める
+5. 学習時間は現実的な見積もりを提供する`
         },
         {
           role: "user",
-          content: `トピック「${topic}」のカリキュラムをJSON形式で作成してください。学習者の目標: ${goal || "基礎から応用まで体系的に学ぶ"}`
+          content: `トピック「${topic}」のカリキュラムを作成してください。学習目標: ${goal || "基礎から応用まで体系的に学ぶ"}`
         }
       ]
     });
@@ -35,9 +42,14 @@ export async function generateCurriculum(topic: string, goal: string) {
       throw new Error("カリキュラムの生成に失敗しました");
     }
 
-    const curriculum = JSON.parse(response.choices[0].message.content);
-    console.log("Generated curriculum:", curriculum);
-    return curriculum;
+    try {
+      const curriculum = JSON.parse(response.choices[0].message.content);
+      console.log("Generated curriculum:", curriculum);
+      return curriculum;
+    } catch (parseError) {
+      console.error("Failed to parse curriculum:", parseError);
+      throw new Error("カリキュラムのJSONパースに失敗しました");
+    }
   } catch (error: any) {
     console.error("Curriculum generation error:", error);
     throw new Error("カリキュラムの生成に失敗しました: " + error.message);
@@ -55,7 +67,12 @@ export async function getTutorResponse(
       messages: [
         {
           role: "system",
-          content: `あなたは${context}を教えるチューターです。明確で簡潔な説明を心がけ、学習者の理解を促進してください。`
+          content: `あなたは${context}を教えるチューターです。以下のガイドラインに従って応答してください：
+1. 明確で簡潔な説明を心がけ、専門用語を使う場合は適切な解説を加える
+2. 学習者の理解度に応じて説明の詳しさを調整する
+3. 具体例や類似例を用いて概念の理解を促進する
+4. 質問の意図を理解し、的確な回答を提供する
+5. 必要に応じて、カリキュラムの関連する部分を参照する`
         },
         ...chatHistory.map(msg => ({
           role: msg.role as "assistant" | "user",
@@ -111,7 +128,12 @@ export async function generateQuiz(topic: string, difficulty: string) {
       throw new Error("クイズの生成に失敗しました");
     }
 
-    return JSON.parse(response.choices[0].message.content);
+    try {
+      return JSON.parse(response.choices[0].message.content);
+    } catch (parseError) {
+      console.error("Failed to parse quiz:", parseError);
+      throw new Error("クイズのJSONパースに失敗しました");
+    }
   } catch (error: any) {
     console.error("Quiz generation error:", error);
     throw new Error("クイズの生成に失敗しました: " + error.message);
@@ -145,7 +167,12 @@ export async function analyzeWeakness(quizResults: any[]) {
       throw new Error("分析の生成に失敗しました");
     }
 
-    return JSON.parse(response.choices[0].message.content);
+    try {
+      return JSON.parse(response.choices[0].message.content);
+    } catch (parseError) {
+      console.error("Failed to parse analysis:", parseError);
+      throw new Error("分析結果のJSONパースに失敗しました");
+    }
   } catch (error: any) {
     console.error("Weakness analysis error:", error);
     throw new Error("弱点分析の生成に失敗しました: " + error.message);
