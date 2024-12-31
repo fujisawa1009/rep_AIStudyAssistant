@@ -10,7 +10,7 @@ export async function generateCurriculum(topic: string, goal: string) {
       messages: [
         {
           role: "system",
-          content: `You are an expert curriculum designer. Create a structured learning path and return it in JSON format with the following structure:
+          content: `You are an expert curriculum designer. Create a structured learning path and return it in JSON format with the following structure. Reply with JSON only, no other text:
 {
   "sections": [
     {
@@ -33,7 +33,8 @@ export async function generateCurriculum(topic: string, goal: string) {
     });
 
     return JSON.parse(response.choices[0].message.content);
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Curriculum generation error:", error);
     throw new Error("Failed to generate curriculum: " + error.message);
   }
 }
