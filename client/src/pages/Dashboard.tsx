@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { Loader2, BookOpen, MessageSquare, Brain } from 'lucide-react';
@@ -30,7 +30,6 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { user, logout } = useUser();
   const { topics = [], topicsLoading, createTopic, analysis, analysisLoading } = useTutor();
-  const [isCreating, setIsCreating] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
@@ -43,7 +42,6 @@ export default function Dashboard() {
   });
 
   const onSubmit = async (data: TopicForm) => {
-    setIsCreating(true);
     try {
       await createTopic(data);
       setIsDialogOpen(false);
@@ -58,8 +56,6 @@ export default function Dashboard() {
         description: error.message || "トピックの作成に失敗しました",
         variant: "destructive",
       });
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -97,6 +93,7 @@ export default function Dashboard() {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>新しいトピックの作成</DialogTitle>
+                    <DialogClose />
                   </DialogHeader>
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -107,7 +104,7 @@ export default function Dashboard() {
                           <FormItem>
                             <FormLabel>トピック名</FormLabel>
                             <FormControl>
-                              <Input {...field} disabled={isCreating} />
+                              <Input {...field} autoFocus />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -120,16 +117,27 @@ export default function Dashboard() {
                           <FormItem>
                             <FormLabel>説明</FormLabel>
                             <FormControl>
-                              <Textarea {...field} disabled={isCreating} />
+                              <Textarea {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      <Button type="submit" disabled={isCreating}>
-                        {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        トピックを作成
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setIsDialogOpen(false);
+                            form.reset();
+                          }}
+                        >
+                          キャンセル
+                        </Button>
+                        <Button type="submit">
+                          トピックを作成
+                        </Button>
+                      </div>
                     </form>
                   </Form>
                 </DialogContent>
