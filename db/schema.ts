@@ -1,6 +1,7 @@
 import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
+import { z } from "zod";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -21,8 +22,8 @@ export const topics = pgTable("topics", {
 
 export const quizzes = pgTable("quizzes", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  topicId: integer("topic_id").references(() => topics.id),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  topicId: integer("topic_id").references(() => topics.id).notNull(),
   questions: jsonb("questions").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -96,7 +97,11 @@ export const selectUserSchema = createSelectSchema(users);
 export const insertTopicSchema = createInsertSchema(topics);
 export const selectTopicSchema = createSelectSchema(topics);
 
-export const insertQuizSchema = createInsertSchema(quizzes);
+// カスタムスキーマ定義
+export const insertQuizSchema = z.object({
+  topicId: z.number(),
+  userId: z.number(),
+});
 export const selectQuizSchema = createSelectSchema(quizzes);
 
 export const insertQuizResultSchema = createInsertSchema(quizResults);

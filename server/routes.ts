@@ -133,19 +133,28 @@ export function registerRoutes(app: Express): Server {
     if (!req.isAuthenticated()) return res.status(401).send("Not authorized");
 
     try {
-      const result = insertQuizSchema.safeParse(req.body);
+      // topicIdのみ必須とする
+      const result = insertQuizSchema.safeParse({
+        topicId: req.body.topicId,
+        userId: (req.user as any).id,
+      });
+
       if (!result.success) {
         return res.status(400).send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
       }
 
-      const topicResult = await db
+      const [topic] = await db
         .select()
         .from(topics)
-        .where(sql`${topics.id} = ${result.data.topicId}`);
+        .where(
+          and(
+            eq(topics.id, result.data.topicId),
+            eq(topics.userId, (req.user as any).id)
+          )
+        );
 
-      const topic = topicResult[0];
       if (!topic) {
-        return res.status(404).send("Topic not found");
+        return res.status(404).send("Topic not found or unauthorized");
       }
 
       const quizQuestions = await generateQuiz(topic.name, "medium");
@@ -153,7 +162,7 @@ export function registerRoutes(app: Express): Server {
       const [quiz] = await db
         .insert(quizzes)
         .values({
-          ...result.data,
+          topicId: result.data.topicId,
           userId: (req.user as any).id,
           questions: quizQuestions,
         })
