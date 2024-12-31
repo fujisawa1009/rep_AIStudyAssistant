@@ -35,7 +35,41 @@ export function useTutor() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
+      toast({
+        title: "成功",
+        description: "トピックが作成されました",
+      });
     },
+  });
+
+  const deleteTopicMutation = useMutation({
+    mutationFn: async (topicId: number) => {
+      const response = await fetch(`/api/topics/${topicId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText);
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
+      toast({
+        title: "成功",
+        description: "トピックが削除されました",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "エラー",
+        description: `トピックの削除に失敗しました: ${error.message}`,
+        variant: "destructive",
+      });
+    }
   });
 
   const createQuizMutation = useMutation({
@@ -131,6 +165,7 @@ export function useTutor() {
     topics,
     topicsLoading,
     createTopic: createTopicMutation.mutateAsync,
+    deleteTopic: deleteTopicMutation.mutateAsync,
     createQuiz: createQuizMutation.mutateAsync,
     submitQuiz: submitQuizMutation.mutateAsync,
     sendMessage: sendMessageMutation.mutateAsync,

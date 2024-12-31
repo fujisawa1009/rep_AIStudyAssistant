@@ -70,6 +70,57 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Delete topic
+  app.delete("/api/topics/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).send("Not authorized");
+
+    try {
+      const topicId = parseInt(req.params.id);
+      if (isNaN(topicId)) {
+        return res.status(400).send("Invalid topic ID");
+      }
+
+      // Verify topic ownership
+      const [topic] = await db
+        .select()
+        .from(topics)
+        .where(
+          and(
+            eq(topics.id, topicId),
+            eq(topics.userId, (req.user as any).id)
+          )
+        )
+        .limit(1);
+
+      if (!topic) {
+        return res.status(404).send("Topic not found or unauthorized");
+      }
+
+      // Delete related records first
+      await db
+        .delete(chatHistory)
+        .where(eq(chatHistory.topicId, topicId));
+
+      await db
+        .delete(quizResults)
+        .where(eq(quizResults.quizId, sql`(SELECT id FROM ${quizzes} WHERE topic_id = ${topicId})`));
+
+      await db
+        .delete(quizzes)
+        .where(eq(quizzes.topicId, topicId));
+
+      // Delete the topic
+      await db
+        .delete(topics)
+        .where(eq(topics.id, topicId));
+
+      res.json({ message: "Topic deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting topic:", error);
+      res.status(500).send(error.message);
+    }
+  });
+
   // Quizzes
   app.post("/api/quizzes", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).send("Not authorized");

@@ -9,10 +9,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
-import { Loader2, BookOpen, MessageSquare, Brain } from 'lucide-react';
+import { Loader2, BookOpen, MessageSquare, Brain, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const topicSchema = z.object({
   name: z.string().min(1, "トピック名は必須です"),
@@ -29,7 +40,7 @@ type Analysis = {
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { user, logout } = useUser();
-  const { topics = [], topicsLoading, createTopic, analysis, analysisLoading } = useTutor();
+  const { topics = [], topicsLoading, createTopic, analysis, analysisLoading, deleteTopic } = useTutor();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
@@ -156,7 +167,7 @@ export default function Dashboard() {
                           <h3 className="font-medium">{topic.name}</h3>
                           <p className="text-sm text-gray-500">{topic.description}</p>
                         </div>
-                        <div className="space-x-2">
+                        <div className="space-x-2 flex items-center">
                           <Button
                             variant="outline"
                             size="sm"
@@ -173,6 +184,51 @@ export default function Dashboard() {
                             <Brain className="h-4 w-4 mr-1" />
                             クイズ
                           </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500 hover:text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>トピックの削除</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  「{topic.name}」を削除してもよろしいですか？
+                                  この操作は取り消せません。関連するクイズ結果やチャット履歴も削除されます。
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-red-500 hover:bg-red-600"
+                                  onClick={async (e) => {
+                                    e.preventDefault();
+                                    try {
+                                      await deleteTopic(topic.id);
+                                      toast({
+                                        title: "成功",
+                                        description: `${topic.name}が削除されました`,
+                                      });
+                                    } catch (error) {
+                                      console.error('Failed to delete topic:', error);
+                                      toast({
+                                        title: "エラー",
+                                        description: "トピックの削除に失敗しました",
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  削除
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </CardContent>
                     </Card>
