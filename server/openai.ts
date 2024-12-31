@@ -35,7 +35,8 @@ export async function generateCurriculum(topic: string, goal: string) {
           role: "user",
           content: `トピック「${topic}」のカリキュラムを作成してください。学習目標: ${goal || "基礎から応用まで体系的に学ぶ"}`
         }
-      ]
+      ],
+      response_format: { type: "json_object" }
     });
 
     if (!response.choices[0].message.content) {
@@ -104,7 +105,7 @@ export async function generateQuiz(topic: string, difficulty: string) {
       messages: [
         {
           role: "system",
-          content: `以下の形式の有効なJSONオブジェクトのみで5つの選択式問題を作成してください：
+          content: `以下の形式の有効なJSONオブジェクトのみを返してください：
 
 {
   "questions": [
@@ -119,9 +120,10 @@ export async function generateQuiz(topic: string, difficulty: string) {
         },
         {
           role: "user",
-          content: `トピック「${topic}」の${difficulty}難易度のクイズをJSON形式で生成してください。`
+          content: `トピック「${topic}」の${difficulty}難易度のクイズを5問、JSON形式で生成してください。`
         }
-      ]
+      ],
+      response_format: { type: "json_object" }
     });
 
     if (!response.choices[0].message.content) {
@@ -129,7 +131,9 @@ export async function generateQuiz(topic: string, difficulty: string) {
     }
 
     try {
-      return JSON.parse(response.choices[0].message.content);
+      const quiz = JSON.parse(response.choices[0].message.content);
+      console.log("Generated quiz:", quiz);
+      return quiz.questions; // questions配列のみを返す
     } catch (parseError) {
       console.error("Failed to parse quiz:", parseError);
       throw new Error("クイズのJSONパースに失敗しました");
@@ -160,7 +164,8 @@ export async function analyzeWeakness(quizResults: any[]) {
           role: "user",
           content: `以下のクイズ結果を分析し、JSONフォーマットで改善提案を提供してください: ${JSON.stringify(quizResults)}`
         }
-      ]
+      ],
+      response_format: { type: "json_object" }
     });
 
     if (!response.choices[0].message.content) {
