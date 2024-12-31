@@ -1,16 +1,21 @@
+// チューター機能に関連するカスタムフック
+// トピックの管理、クイズ、チャット、学習分析などの機能を提供
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import type { Topic, Quiz, ChatHistory } from '@db/schema';
 
+// 学習分析結果の型定義
 type Analysis = {
-  weakAreas: Record<string, string>;
-  recommendations: string[];
+  weakAreas: Record<string, string>;  // 改善が必要な分野とその詳細
+  recommendations: string[];          // 推奨される学習方法のリスト
 };
 
 export function useTutor() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // トピック一覧の取得
+  // GET /api/topics エンドポイントからユーザーの学習トピックを取得
   const { data: topics, isLoading: topicsLoading } = useQuery<Topic[]>({
     queryKey: ['/api/topics'],
     onError: (error: Error) => {
@@ -22,6 +27,8 @@ export function useTutor() {
     }
   });
 
+  // トピックの作成
+  // POST /api/topics エンドポイントで新しいトピックを作成
   const createTopicMutation = useMutation({
     mutationFn: async (data: { name: string; description: string }) => {
       const response = await fetch('/api/topics', {
@@ -39,6 +46,7 @@ export function useTutor() {
       return response.json() as Promise<Topic>;
     },
     onSuccess: () => {
+      // 作成成功後、トピック一覧を更新
       queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
       toast({
         title: "成功",
@@ -47,6 +55,8 @@ export function useTutor() {
     },
   });
 
+  // トピックの削除
+  // DELETE /api/topics/:id エンドポイントで指定されたトピックを削除
   const deleteTopicMutation = useMutation({
     mutationFn: async (topicId: number) => {
       const response = await fetch(`/api/topics/${topicId}`, {
@@ -62,6 +72,7 @@ export function useTutor() {
       return response.json();
     },
     onSuccess: () => {
+      // 削除成功後、トピック一覧を更新
       queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
       toast({
         title: "成功",
@@ -77,6 +88,8 @@ export function useTutor() {
     }
   });
 
+  // クイズの作成
+  // POST /api/quizzes エンドポイントで新しいクイズを作成
   const createQuizMutation = useMutation({
     mutationFn: async (topicId: number) => {
       const response = await fetch('/api/quizzes', {
@@ -102,6 +115,8 @@ export function useTutor() {
     }
   });
 
+  // クイズ結果の送信
+  // POST /api/quiz-results エンドポイントでクイズの結果を保存
   const submitQuizMutation = useMutation({
     mutationFn: async (data: { quizId: number; score: number; answers: any[] }) => {
       const response = await fetch('/api/quiz-results', {
@@ -119,6 +134,7 @@ export function useTutor() {
       return response.json();
     },
     onSuccess: () => {
+      // 結果送信成功後、分析データを更新
       queryClient.invalidateQueries({ queryKey: ['/api/analysis'] });
     },
     onError: (error: Error) => {
@@ -130,6 +146,8 @@ export function useTutor() {
     }
   });
 
+  // チャットメッセージの送信
+  // POST /api/chat エンドポイントでメッセージを送信し、AIの応答を取得
   const sendMessageMutation = useMutation({
     mutationFn: async (data: { topicId: number; message: string }) => {
       const response = await fetch('/api/chat', {
@@ -155,6 +173,8 @@ export function useTutor() {
     }
   });
 
+  // 学習分析データの取得
+  // GET /api/analysis エンドポイントから学習進捗の分析結果を取得
   const { data: analysis, isLoading: analysisLoading } = useQuery<Analysis>({
     queryKey: ['/api/analysis'],
     onError: (error: Error) => {
@@ -166,15 +186,16 @@ export function useTutor() {
     }
   });
 
+  // 各機能をオブジェクトとしてエクスポート
   return {
-    topics,
-    topicsLoading,
-    createTopic: createTopicMutation.mutateAsync,
-    deleteTopic: deleteTopicMutation.mutateAsync,
-    createQuiz: createQuizMutation.mutateAsync,
-    submitQuiz: submitQuizMutation.mutateAsync,
-    sendMessage: sendMessageMutation.mutateAsync,
-    analysis,
-    analysisLoading,
+    topics,                  // トピック一覧
+    topicsLoading,          // トピック読み込み状態
+    createTopic: createTopicMutation.mutateAsync,    // トピック作成
+    deleteTopic: deleteTopicMutation.mutateAsync,    // トピック削除
+    createQuiz: createQuizMutation.mutateAsync,      // クイズ作成
+    submitQuiz: submitQuizMutation.mutateAsync,      // クイズ結果送信
+    sendMessage: sendMessageMutation.mutateAsync,    // チャットメッセージ送信
+    analysis,               // 学習分析結果
+    analysisLoading,        // 分析データ読み込み状態
   };
 }
