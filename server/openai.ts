@@ -44,6 +44,42 @@ export async function generateCurriculum(topic: string, goal: string) {
   }
 }
 
+export async function getTutorResponse(
+  message: string,
+  context: string,
+  chatHistory: Array<{ role: string; content: string }>
+) {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: `あなたは${context}を教えるチューターです。明確で簡潔な説明を心がけ、学習者の理解を促進してください。`
+        },
+        ...chatHistory.map(msg => ({
+          role: msg.role as "assistant" | "user",
+          content: msg.content
+        })),
+        {
+          role: "user",
+          content: message
+        }
+      ]
+    });
+
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error("チューターの応答の生成に失敗しました");
+    }
+
+    return content;
+  } catch (error: any) {
+    console.error("Tutor response error:", error);
+    throw new Error("チューターの応答の生成に失敗しました: " + error.message);
+  }
+}
+
 export async function generateQuiz(topic: string, difficulty: string) {
   try {
     const response = await openai.chat.completions.create({
@@ -79,42 +115,6 @@ export async function generateQuiz(topic: string, difficulty: string) {
   } catch (error: any) {
     console.error("Quiz generation error:", error);
     throw new Error("クイズの生成に失敗しました: " + error.message);
-  }
-}
-
-export async function getTutorResponse(
-  message: string,
-  context: string,
-  chatHistory: Array<{ role: string; content: string }>
-) {
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: `あなたは${context}を教えるチューターです。明確で簡潔な説明を心がけ、学習者の理解を促進してください。`
-        },
-        ...chatHistory.map(msg => ({
-          role: msg.role as "assistant" | "user",
-          content: msg.content
-        })),
-        {
-          role: "user",
-          content: message
-        }
-      ]
-    });
-
-    const content = response.choices[0].message.content;
-    if (!content) {
-      throw new Error("チューターの応答の生成に失敗しました");
-    }
-
-    return content;
-  } catch (error: any) {
-    console.error("Tutor response error:", error);
-    throw new Error("チューターの応答の生成に失敗しました: " + error.message);
   }
 }
 

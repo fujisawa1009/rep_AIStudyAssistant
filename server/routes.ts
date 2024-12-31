@@ -159,6 +159,8 @@ export function registerRoutes(app: Express): Server {
       const result = insertChatHistorySchema.safeParse({
         message: req.body.message,
         topicId: req.body.topicId,
+        userId: (req.user as any).id,
+        isAi: false,
       });
       if (!result.success) {
         return res.status(400).send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
