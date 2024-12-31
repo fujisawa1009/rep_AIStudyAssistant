@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { useRoute } from 'wouter';
+import { useRoute, useLocation } from 'wouter';
 import { useTutor } from '@/hooks/use-tutor';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, ArrowLeft } from 'lucide-react';
 
 type ChatMessage = {
   content: string;
@@ -27,6 +27,7 @@ type Curriculum = {
 
 export default function ChatInterface() {
   const [, params] = useRoute('/chat/:id');
+  const [, setLocation] = useLocation();
   const { topics, sendMessage } = useTutor();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -74,6 +75,15 @@ export default function ChatInterface() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <Button
+        variant="ghost"
+        className="mb-4"
+        onClick={() => setLocation('/')}
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        ダッシュボードに戻る
+      </Button>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* カリキュラム部分（左側） */}
         <Card className="h-[80vh]">
